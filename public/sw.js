@@ -1,4 +1,6 @@
-const CACHE_NAME = 'gastrohealth-ai-cache-v4';
+
+// Incrementing cache version to ensure the new service worker is installed.
+const CACHE_NAME = 'gastrohealth-ai-cache-v6-control';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -7,57 +9,60 @@ const URLS_TO_CACHE = [
   '/icon-512x512.png'
 ];
 
-// Install: Cache the app shell.
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Install event started.');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache and caching app shell');
+        console.log('[Service Worker] Caching app shell:', URLS_TO_CACHE);
         return cache.addAll(URLS_TO_CACHE);
       })
-      .then(() => self.skipWaiting()) // Activate new SW immediately
+      .then(() => {
+        console.log('[Service Worker] App shell cached successfully.');
+      })
+      .catch(error => {
+        console.error('[Service Worker] Caching failed during install:', error);
+      })
   );
 });
 
-// Activate: Clean up old caches.
+// This listener allows the client to command the SW to activate immediately.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[Service Worker] Received SKIP_WAITING message. Activating now.');
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('activate', event => {
+  console.log('[Service Worker] Activate event started.');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('[Service Worker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim()) // Take control of clients
+    }).then(() => {
+        console.log('[Service Worker] Old caches cleaned up.');
+        return self.clients.claim(); // Take control of all open pages.
+    })
   );
 });
 
-// Fetch: Network-first, falling back to cache strategy.
-self.addEventListener('fetch', event => {
-  // Ignore non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Network request succeeded. Clone the response, cache it, and return it.
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
-        return response;
-      })
-      .catch(() => {
-        // Network request failed. Try to get the response from the cache.
-        return caches.match(event.request).then(response => {
-            // Return response from cache, or a generic fallback if not found
-            return response || new Response("You are offline. Some content may not be available.", { headers: { 'Content-Type': 'text/plain' }});
-        });
-      })
-  );
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                // Cache hit - return response
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request);
+            })
+    );
 });
