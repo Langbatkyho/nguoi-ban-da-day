@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'gastrohealth-ai-cache-v3'; // Increased version number
+const CACHE_NAME = 'gastrohealth-ai-cache-v4';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,31 +7,57 @@ const URLS_TO_CACHE = [
   '/icon-512x512.png'
 ];
 
-// Install event: cache the core app shell files.
+// Install: Cache the app shell.
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Attempting to install...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[Service Worker] Caching app shell');
+        console.log('Opened cache and caching app shell');
         return cache.addAll(URLS_TO_CACHE);
       })
-      .then(() => {
-        console.log('[Service Worker] Installation successful');
-        // Force the waiting service worker to become the active service worker.
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('[Service Worker] Installation failed:', error);
-      })
+      .then(() => self.skipWaiting()) // Activate new SW immediately
   );
 });
 
-// Activate event: take control of the page immediately.
+// Activate: Clean up old caches.
 self.addEventListener('activate', event => {
-    console.log('[Service Worker] Activating...');
-    event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim()) // Take control of clients
+  );
 });
 
-// We are intentionally leaving out the 'fetch' event listener for now
-// to ensure the installation part works correctly first.
+// Fetch: Network-first, falling back to cache strategy.
+self.addEventListener('fetch', event => {
+  // Ignore non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Network request succeeded. Clone the response, cache it, and return it.
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+        return response;
+      })
+      .catch(() => {
+        // Network request failed. Try to get the response from the cache.
+        return caches.match(event.request).then(response => {
+            // Return response from cache, or a generic fallback if not found
+            return response || new Response("You are offline. Some content may not be available.", { headers: { 'Content-Type': 'text/plain' }});
+        });
+      })
+  );
+});
