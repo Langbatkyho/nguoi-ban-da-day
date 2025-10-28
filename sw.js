@@ -1,63 +1,38 @@
-const CACHE_NAME = 'gastrohealth-ai-cache-v2'; // Cache version updated
+
+const CACHE_NAME = 'gastrohealth-ai-cache-v3'; // Increased version number
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icon-192x192.png',
+  '/icon-512x512.png'
 ];
 
-// Install: Cache the app shell
+// Install event: cache the core app shell files.
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Attempting to install...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache and caching app shell');
+        console.log('[Service Worker] Caching app shell');
         return cache.addAll(URLS_TO_CACHE);
       })
-  );
-});
-
-// Fetch: Implement a network-falling-back-to-cache strategy
-self.addEventListener('fetch', event => {
-  // We only want to cache GET requests.
-  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // If we get a valid response, cache it and return it
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            // Cache the resource for future offline use.
-            cache.put(event.request, responseToCache);
-          });
-        return response;
+      .then(() => {
+        console.log('[Service Worker] Installation successful');
+        // Force the waiting service worker to become the active service worker.
+        return self.skipWaiting();
       })
-      .catch(() => {
-        // If the network request fails, try to get it from the cache
-        console.log('Network request failed. Trying to serve from cache:', event.request.url);
-        return caches.match(event.request);
+      .catch(error => {
+        console.error('[Service Worker] Installation failed:', error);
       })
   );
 });
 
-// Activate: Clean up old caches
+// Activate event: take control of the page immediately.
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+    console.log('[Service Worker] Activating...');
+    event.waitUntil(self.clients.claim());
 });
+
+// We are intentionally leaving out the 'fetch' event listener for now
+// to ensure the installation part works correctly first.
