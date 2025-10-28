@@ -1,0 +1,5 @@
+{
+  "name": "GastroHealth AI",
+  "description": "An AI-powered assistant to help users manage digestive health conditions like ulcers and acid reflux through personalized meal plans, food safety checks, and symptom tracking.",
+  "requestFramePermissions": []
+}
