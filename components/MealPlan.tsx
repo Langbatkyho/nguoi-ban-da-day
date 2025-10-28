@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, SymptomLog, MealPlan as MealPlanType } from '../types';
+import { UserProfile, SymptomLog, MealPlan as MealPlanType, MealRatings, MealRating } from '../types';
 import { generateMealPlan } from '../services/geminiService';
 import { LoadingSpinner } from './icons';
 
@@ -14,6 +13,26 @@ const MealPlan: React.FC<MealPlanProps> = ({ apiKey, userProfile, symptoms }) =>
   const [mealPlan, setMealPlan] = useState<MealPlanType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<MealRatings>(() => {
+    const savedRatings = localStorage.getItem('mealRatings');
+    return savedRatings ? JSON.parse(savedRatings) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mealRatings', JSON.stringify(ratings));
+  }, [ratings]);
+
+  const handleRating = (day: string, mealName: string, rating: MealRating) => {
+    setRatings(prev => {
+        const newRatings = { ...prev };
+        if (!newRatings[day]) {
+            newRatings[day] = {};
+        }
+        // Toggle off if clicking the same rating again
+        newRatings[day][mealName] = prev[day]?.[mealName] === rating ? null : rating;
+        return newRatings;
+    });
+  };
 
   const fetchMealPlan = useCallback(async () => {
     setIsLoading(true);
@@ -68,17 +87,27 @@ const MealPlan: React.FC<MealPlanProps> = ({ apiKey, userProfile, symptoms }) =>
             <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
               <h2 className="text-xl font-bold text-indigo-700 mb-4 border-b-2 border-indigo-200 pb-2">{dailyPlan.day}</h2>
               <ul className="space-y-4">
-                {dailyPlan.meals.map((meal, mealIndex) => (
-                  <li key={mealIndex} className="flex items-start">
-                    <div className="bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                      {meal.time.split(' ')[1] === 'AM' ? 'S' : (meal.time.includes('12') || meal.time.includes('1') || meal.time.includes('2')) ? 'T' : 'T'}
+                {dailyPlan.meals.map((meal, mealIndex) => {
+                   const currentRating = ratings[dailyPlan.day]?.[meal.name] || null;
+                   return(
+                  <li key={mealIndex} className="flex flex-col">
+                    <div className="flex items-start">
+                        <div className="bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                        {meal.time.split(' ')[1] === 'AM' ? 'S' : (meal.time.includes('12') || meal.time.includes('1') || meal.time.includes('2')) ? 'T' : 'T'}
+                        </div>
+                        <div>
+                        <p className="font-semibold text-gray-700">{meal.name}</p>
+                        <p className="text-sm text-gray-500">{meal.time} - {meal.portion}</p>
+                        </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-700">{meal.name}</p>
-                      <p className="text-sm text-gray-500">{meal.time} - {meal.portion}</p>
+                    <div className="flex items-center gap-2 pl-11 mt-2 text-xl">
+                        <span className="text-sm text-gray-500 mr-1">Cảm thấy:</span>
+                        <button onClick={() => handleRating(dailyPlan.day, meal.name, 'good')} className={`p-1 rounded-full transition-transform duration-200 ${currentRating === 'good' ? 'bg-green-200 scale-125' : 'hover:scale-110'}`} aria-label="Tốt">😄</button>
+                        <button onClick={() => handleRating(dailyPlan.day, meal.name, 'neutral')} className={`p-1 rounded-full transition-transform duration-200 ${currentRating === 'neutral' ? 'bg-yellow-200 scale-125' : 'hover:scale-110'}`} aria-label="Bình thường">😐</button>
+                        <button onClick={() => handleRating(dailyPlan.day, meal.name, 'bad')} className={`p-1 rounded-full transition-transform duration-200 ${currentRating === 'bad' ? 'bg-red-200 scale-125' : 'hover:scale-110'}`} aria-label="Tệ">😟</button>
                     </div>
                   </li>
-                ))}
+                )})}
               </ul>
             </div>
           ))}

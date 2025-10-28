@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { UserProfile, SymptomLog, MealPlan, FoodCheckResult, FoodSafety, Recipe } from '../types';
 
@@ -73,8 +72,10 @@ export async function checkFoodSafety(apiKey: string, profile: UserProfile, food
 
       Thực phẩm cần kiểm tra: "${foodName}"
 
-      Hãy đánh giá mức độ an toàn của thực phẩm này theo 3 cấp độ: "An toàn", "Hạn chế", "Tránh".
-      Sau đó, giải thích ngắn gọn lý do cho đánh giá của bạn. Ví dụ: "Chứa nhiều acid, có thể gây ợ nóng".
+      YÊU CẦU:
+      1. Đánh giá mức độ an toàn của thực phẩm này theo 3 cấp độ: "An toàn", "Hạn chế", "Tránh".
+      2. Giải thích ngắn gọn lý do cho đánh giá của bạn.
+      3. Cung cấp một "Dẫn chứng khoa học" ngắn gọn cho nhận định trên, nếu có thể, hãy trích dẫn nguồn (ví dụ: tên nghiên cứu, bài báo y khoa). Nếu không có dẫn chứng cụ thể, hãy giải thích dựa trên nguyên tắc dinh dưỡng chung.
     `;
     
     const textPart = { text: prompt };
@@ -92,7 +93,8 @@ export async function checkFoodSafety(apiKey: string, profile: UserProfile, food
                     type: Type.OBJECT,
                     properties: {
                         safetyLevel: { type: Type.STRING, enum: [FoodSafety.Safe, FoodSafety.Limit, FoodSafety.Avoid] },
-                        reason: { type: Type.STRING, description: 'Lý do giải thích cho đánh giá' }
+                        reason: { type: Type.STRING, description: 'Lý do giải thích cho đánh giá' },
+                        scientificEvidence: { type: Type.STRING, description: 'Dẫn chứng khoa học và nguồn trích dẫn nếu có' }
                     },
                     required: ['safetyLevel', 'reason']
                 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { UserProfile, FoodCheckResult, FoodSafety } from '../types';
 import { checkFoodSafety } from '../services/geminiService';
@@ -131,6 +130,17 @@ const FoodChecker: React.FC<FoodCheckerProps> = ({ apiKey, userProfile }) => {
         <div className={`mt-6 rounded-xl shadow-lg p-6 border-l-4 ${getResultCardClasses(result.safetyLevel)}`}>
           <h3 className="text-2xl font-bold">{result.safetyLevel}</h3>
           <p className="mt-2 text-md">{result.reason}</p>
+          {result.scientificEvidence && (
+            <div className="mt-4 pt-4 border-t border-current border-opacity-30">
+                <h4 className="font-semibold text-md mb-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                </svg>
+                Dẫn chứng khoa học
+                </h4>
+                <p className="text-sm opacity-90 whitespace-pre-line">{result.scientificEvidence}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

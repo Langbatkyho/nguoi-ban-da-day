@@ -1,4 +1,3 @@
-
 export enum Condition {
   Ulcer = "Viêm loét dạ dày",
   Reflux = "Trào ngược dạ dày thực quản",
@@ -50,6 +49,7 @@ export enum FoodSafety {
 export interface FoodCheckResult {
   safetyLevel: FoodSafety;
   reason: string;
+  scientificEvidence?: string;
 }
 
 export interface Recipe {
@@ -60,3 +60,7 @@ export interface Recipe {
   ingredients: string[];
   instructions: string;
 }
+
+// Added for meal rating
+export type MealRating = 'good' | 'neutral' | 'bad' | null;
+export type MealRatings = { [day: string]: { [mealName: string]: MealRating } };

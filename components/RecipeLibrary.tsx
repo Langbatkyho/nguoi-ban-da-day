@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Recipe, UserProfile } from '../types';
 import { suggestRecipe } from '../services/geminiService';
@@ -128,6 +127,7 @@ const RecipeLibrary: React.FC<RecipeLibraryProps> = ({apiKey, userProfile}) => {
     const [filter, setFilter] = useState<'All' | Recipe['category']>('All');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const filteredRecipes = useMemo(() => {
         if (filter === 'All') return recipes;
@@ -143,6 +143,28 @@ const RecipeLibrary: React.FC<RecipeLibraryProps> = ({apiKey, userProfile}) => {
             default: return 'bg-gray-100 text-gray-800';
         }
     }
+    
+    const handleCopy = () => {
+        if (!selectedRecipe) return;
+
+        const recipeText = `
+**${selectedRecipe.title}**
+
+*${selectedRecipe.description}*
+
+**Thời gian nấu:** ${selectedRecipe.cookTime}
+
+**Nguyên liệu:**
+${selectedRecipe.ingredients.map(ing => `- ${ing}`).join('\n')}
+
+**Hướng dẫn:**
+${selectedRecipe.instructions}
+        `.trim();
+
+        navigator.clipboard.writeText(recipeText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    };
 
 
     return (
@@ -200,7 +222,21 @@ const RecipeLibrary: React.FC<RecipeLibraryProps> = ({apiKey, userProfile}) => {
                         </ul>
                         <h3 className="font-bold mb-2">Hướng dẫn:</h3>
                         <p className="whitespace-pre-line text-gray-700">{selectedRecipe.instructions}</p>
-                        <button onClick={() => setSelectedRecipe(null)} className="mt-6 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 w-full">Đóng</button>
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={handleCopy}
+                                className="flex-1 bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors disabled:bg-gray-400"
+                                disabled={copied}
+                            >
+                                {copied ? 'Đã sao chép!' : 'Sao chép Công thức'}
+                            </button>
+                            <button
+                                onClick={() => setSelectedRecipe(null)}
+                                className="flex-1 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700"
+                            >
+                                Đóng
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

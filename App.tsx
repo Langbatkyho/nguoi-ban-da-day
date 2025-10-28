@@ -24,7 +24,7 @@ const App: React.FC = () => {
       const savedSymptoms = localStorage.getItem('symptomLogs');
       return savedSymptoms ? JSON.parse(savedSymptoms) : [];
   });
-  const [activeView, setActiveView] = useState<View>('mealPlan');
+  const [activeView, setActiveView] = useState<View>('symptomLogger');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   
   const [showConfirmLogoutModal, setShowConfirmLogoutModal] = useState(false);
@@ -82,7 +82,7 @@ const App: React.FC = () => {
       setApiKey(null);
       setUserProfile(null);
       setSymptoms([]);
-      setActiveView('mealPlan');
+      setActiveView('symptomLogger');
     }, 2000);
   };
 
@@ -108,7 +108,7 @@ const App: React.FC = () => {
       case 'reminders':
         return <Reminders />;
       default:
-        return <MealPlan apiKey={apiKey} userProfile={userProfile} symptoms={symptoms} />;
+        return <SymptomLogger onAddSymptom={addSymptom} symptoms={symptoms} />;
     }
   };
 
@@ -172,9 +172,9 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-y-auto">
             <nav className="flex-1 p-4">
               <ul className="space-y-2">
+                <NavItem view="symptomLogger" label="Theo dõi Triệu chứng" icon={<SymptomIcon />} currentView={activeView} setView={setActiveView} />
                 <NavItem view="mealPlan" label="Thực đơn Cá nhân hóa" icon={<HomeIcon />} currentView={activeView} setView={setActiveView} />
                 <NavItem view="foodChecker" label="Kiểm tra Thực phẩm" icon={<FoodCheckIcon />} currentView={activeView} setView={setActiveView} />
-                <NavItem view="symptomLogger" label="Theo dõi Triệu chứng" icon={<SymptomIcon />} currentView={activeView} setView={setActiveView} />
                 <NavItem view="healthReport" label="Báo cáo Sức khỏe" icon={<ReportIcon />} currentView={activeView} setView={setActiveView} />
                  <div className="pt-2 mt-2 border-t">
                     <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Công cụ</p>
