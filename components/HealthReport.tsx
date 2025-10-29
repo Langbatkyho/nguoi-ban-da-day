@@ -98,8 +98,25 @@ const HealthReport: React.FC<HealthReportProps> = ({ apiKey, userProfile, sympto
         {analysis && !isLoading && (
           <div className="prose prose-indigo max-w-none text-gray-600">
             {analysis.split('\n').map((line, index) => {
-                if (line.startsWith('- ')) return <p key={index}>{line.substring(2)}</p>
-                return <p key={index}>{line}</p>
+              const trimmedLine = line.trim();
+              if (trimmedLine === '') return <br key={index} />;
+
+              const boldMatch = trimmedLine.match(/^\*\*(.*)\*\*$/);
+              if (boldMatch && boldMatch[1]) {
+                return <h3 key={index} className="font-bold text-lg mt-4 mb-2 text-gray-800">{boldMatch[1]}</h3>;
+              }
+              
+              const listItemMatch = trimmedLine.match(/^[\*\-]\s(.*)/);
+              if (listItemMatch && listItemMatch[1]) {
+                  return <p key={index} className="ml-4">&bull; {listItemMatch[1]}</p>;
+              }
+              
+              const numberedSectionMatch = trimmedLine.match(/^\d\.\s+\*\*(.*)\*\*$/);
+              if (numberedSectionMatch && numberedSectionMatch[1]) {
+                  return <h3 key={index} className="font-bold text-lg mt-4 mb-2 text-gray-800">{numberedSectionMatch[1]}</h3>;
+              }
+              
+              return <p key={index}>{line}</p>;
             })}
           </div>
         )}

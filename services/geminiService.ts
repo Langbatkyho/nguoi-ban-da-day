@@ -110,24 +110,41 @@ export async function checkFoodSafety(apiKey: string, profile: UserProfile, food
 
 export async function analyzeTriggers(apiKey: string, profile: UserProfile, symptoms: SymptomLog[]): Promise<string> {
     const ai = new GoogleGenAI({ apiKey });
-    if(symptoms.length < 3) return "Chưa đủ dữ liệu để phân tích. Hãy ghi lại thêm các triệu chứng của bạn.";
+    if(symptoms.length < 3) return "Chưa đủ dữ liệu để phân tích. Hãy ghi lại thêm các triệu chứng của bạn, bao gồm cả những ngày bạn cảm thấy khỏe (mức đau = 0).";
 
-    const logData = symptoms.map(s => `- Ngày ${s.timestamp.toLocaleDateString()}: Ăn "${s.eatenFoods}" -> Đau mức ${s.painLevel}/10.`).join('\n');
+    const logData = symptoms.map(s => {
+        const activity = s.physicalActivity ? `Vận động: "${s.physicalActivity}"` : 'Không vận động';
+        const painDescription = s.painLevel > 0 ? `Đau mức ${s.painLevel}/10 tại ${s.painLocation}` : 'Không đau';
+        return `- Ngày ${s.timestamp.toLocaleDateString()}: Ăn "${s.eatenFoods}". ${activity}. Kết quả: ${painDescription}.`;
+    }).join('\n');
 
     const prompt = `
-        Dựa trên hồ sơ người dùng và nhật ký triệu chứng sau đây, hãy phân tích và xác định các loại thực phẩm hoặc thói quen có khả năng cao là "thủ phạm" gây ra các cơn đau.
+        Dựa trên hồ sơ người dùng và nhật ký sức khỏe sau đây, hãy thực hiện một phân tích so sánh chi tiết để xác định các yếu tố ảnh hưởng đến tình trạng của họ.
 
         HỒ SƠ NGƯỜI DÙNG:
         - Tình trạng bệnh lý: ${profile.condition}
         - Các thực phẩm đã biết gây kích ứng: ${profile.triggerFoods}
 
-        NHẬT KÝ TRIỆU CHỨNG:
+        NHẬT KÝ SỨC KHỎE:
         ${logData}
 
-        YÊU CẦU:
-        - Liệt kê các thực phẩm bị nghi ngờ nhất.
-        - Đưa ra nhận xét dựa trên bằng chứng từ nhật ký. Ví dụ: "Cà chua có vẻ là một tác nhân gây kích ứng, vì 80% số lần bạn ăn nó đều ghi nhận bị đau."
-        - Trình bày kết quả dưới dạng một báo cáo ngắn gọn, dễ hiểu, sử dụng markdown.
+        YÊU CẦU PHÂN TÍCH:
+        1.  **Phân tích Tác nhân Gây đau (Thủ phạm):**
+            *   Xác định các loại thực phẩm, đồ uống, hoặc hoạt động thể chất thường xuất hiện TRƯỚC khi người dùng ghi nhận có cơn đau (mức đau > 0).
+            *   Đưa ra giả thuyết về các "thủ phạm" tiềm tàng. Ví dụ: "Ăn đồ cay và không vận động sau đó có vẻ liên quan đến các cơn đau ở vùng thượng vị."
+
+        2.  **Phân tích Yếu tố Tích cực (Những gì hiệu quả):**
+            *   Xác định các loại thực phẩm, đồ uống, hoặc hoạt động thể chất thường xuất hiện khi người dùng ghi nhận KHÔNG đau (mức đau = 0).
+            *   Tìm ra các "yếu tố bảo vệ" hoặc thói quen tốt. Ví dụ: "Những ngày bạn ăn cháo yến mạch cho bữa sáng và đi bộ nhẹ nhàng, bạn thường không bị đau."
+
+        3.  **So sánh và Đề xuất:**
+            *   So sánh hai nhóm phân tích trên để rút ra kết luận.
+            *   Đưa ra các đề xuất cụ thể, có tính hành động. Phân thành 3 mục:
+                *   **NÊN TRÁNH:** Liệt kê những thứ cần hạn chế hoặc tránh.
+                *   **NÊN DUY TRÌ:** Liệt kê những thói quen tốt cần tiếp tục.
+                *   **NÊN THỬ BỔ SUNG:** Gợi ý những thay đổi hoặc bổ sung mới dựa trên phân tích. Ví dụ: "Hãy thử thay thế cà phê buổi sáng bằng trà gừng, và thêm 15 phút đi bộ sau bữa trưa."
+
+        Trình bày kết quả dưới dạng một báo cáo rõ ràng, dễ hiểu, sử dụng markdown với các tiêu đề in đậm.
     `;
 
     try {

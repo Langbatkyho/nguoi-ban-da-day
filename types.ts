@@ -24,6 +24,7 @@ export interface SymptomLog {
   startTime: string;
   endTime: string;
   eatenFoods: string;
+  physicalActivity: string;
   timestamp: Date;
 }
 
