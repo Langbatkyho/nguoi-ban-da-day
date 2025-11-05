@@ -33,20 +33,31 @@ const Reminders: React.FC = () => {
       [meal]: { ...prev[meal], [field]: value }
     }));
   };
-  
+
   const handleWaterChange = (field: 'interval' | 'enabled', value: number | boolean) => {
     setWaterReminder(prev => ({ ...prev, [field]: value }));
   };
-  
+
   const showTestNotification = () => {
-      if (permission !== 'granted') {
-          alert("Vui lòng cấp quyền thông báo trước.");
-          return;
-      }
-      new Notification("GastroHealth AI", {
-          body: "Đây là thông báo thử nghiệm!",
-          icon: "/favicon.ico" 
-      });
+    if (permission !== 'granted') {
+        alert("Vui lòng cấp quyền thông báo trước.");
+        return;
+    }
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title: 'GastroHealth AI',
+            options: {
+                body: 'Đây là thông báo thử nghiệm!',
+                icon: '/icon-192x192.png',
+                badge: '/icon-192x192.png'
+            }
+        });
+    } else {
+        alert("Không thể gửi thông báo. Service worker chưa sẵn sàng.");
+        console.error("Service worker controller not available.");
+    }
   }
 
   if (permission === 'denied') {
@@ -112,7 +123,7 @@ const Reminders: React.FC = () => {
           ))}
         </div>
       </div>
-      
+
        <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-700 mb-4">Nhắc nhở uống nước</h2>
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

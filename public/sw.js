@@ -1,4 +1,3 @@
-
 // Incrementing cache version to ensure the new service worker is installed.
 const CACHE_NAME = 'gastrohealth-ai-cache-v6-control';
 const URLS_TO_CACHE = [
@@ -26,13 +25,19 @@ self.addEventListener('install', event => {
   );
 });
 
-// This listener allows the client to command the SW to activate immediately.
+// This listener allows the client to command the SW to activate immediately or show notifications.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     console.log('[Service Worker] Received SKIP_WAITING message. Activating now.');
     self.skipWaiting();
   }
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    console.log('[Service Worker] Showing notification:', title, options);
+    event.waitUntil(self.registration.showNotification(title, options));
+  }
 });
+
 
 self.addEventListener('activate', event => {
   console.log('[Service Worker] Activate event started.');
@@ -65,4 +70,21 @@ self.addEventListener('fetch', event => {
                 return fetch(event.request);
             })
     );
+});
+
+self.addEventListener('notificationclick', event => {
+  console.log('[Service Worker] Notification click received.');
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
 });

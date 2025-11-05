@@ -3,7 +3,7 @@ import { UserProfile, SymptomLog, MealPlan, FoodCheckResult, FoodSafety, Recipe 
 
 export async function generateMealPlan(apiKey: string, profile: UserProfile, symptoms: SymptomLog[]): Promise<MealPlan> {
     const ai = new GoogleGenAI({ apiKey });
-    const symptomHistory = symptoms.map(s => `- Vào ${s.timestamp.toLocaleString()}, đã ăn '${s.eatenFoods}' và bị đau mức ${s.painLevel}/10 tại ${s.painLocation}.`).join('\n');
+    const symptomHistory = symptoms.map(s => `- Vào ${new Date(s.timestamp).toLocaleString()}, đã ăn '${s.eatenFoods}' và bị đau mức ${s.painLevel}/10 tại ${s.painLocation}.`).join('\n');
 
     const prompt = `
       Dựa vào thông tin sức khỏe của người dùng sau đây, hãy tạo một kế hoạch thực đơn chi tiết cho 7 ngày tới.
@@ -22,6 +22,7 @@ export async function generateMealPlan(apiKey: string, profile: UserProfile, sym
       - Các món ăn phải dễ tiêu hóa, phù hợp với tình trạng bệnh lý và mục tiêu của người dùng.
       - Tránh hoàn toàn các thực phẩm đã biết gây kích ứng.
       - Ghi rõ tên món ăn, thời gian ăn gợi ý, và khẩu phần ăn hợp lý.
+      - Với mỗi món ăn, thêm một "ghi chú" ngắn gọn giải thích tại sao nó tốt cho tình trạng của người dùng (ví dụ: "Giàu chất xơ hòa tan, giúp làm dịu niêm mạc dạ dày").
       - Đảm bảo thực đơn đa dạng và đủ dinh dưỡng.
     `;
 
@@ -44,9 +45,10 @@ export async function generateMealPlan(apiKey: string, profile: UserProfile, sym
                                     properties: {
                                         name: { type: Type.STRING, description: 'Tên món ăn' },
                                         time: { type: Type.STRING, description: 'Thời gian ăn gợi ý (ví dụ: 7:00 AM)' },
-                                        portion: { type: Type.STRING, description: 'Khẩu phần gợi ý (ví dụ: 1 bát nhỏ)' }
+                                        portion: { type: Type.STRING, description: 'Khẩu phần gợi ý (ví dụ: 1 bát nhỏ)' },
+                                        note: { type: Type.STRING, description: 'Ghi chú ngắn gọn về lợi ích của món ăn' }
                                     },
-                                    required: ['name', 'time', 'portion']
+                                    required: ['name', 'time', 'portion', 'note']
                                 }
                             }
                         },
@@ -115,7 +117,8 @@ export async function analyzeTriggers(apiKey: string, profile: UserProfile, symp
     const logData = symptoms.map(s => {
         const activity = s.physicalActivity ? `Vận động: "${s.physicalActivity}"` : 'Không vận động';
         const painDescription = s.painLevel > 0 ? `Đau mức ${s.painLevel}/10 tại ${s.painLocation}` : 'Không đau';
-        return `- Ngày ${s.timestamp.toLocaleDateString()}: Ăn "${s.eatenFoods}". ${activity}. Kết quả: ${painDescription}.`;
+        const symptomDate = new Date(s.timestamp);
+        return `- Ngày ${symptomDate.toLocaleDateString()}: Ăn "${s.eatenFoods}". ${activity}. Kết quả: ${painDescription}.`;
     }).join('\n');
 
     const prompt = `

@@ -32,6 +32,7 @@ export interface Meal {
   name: string;
   time: string;
   portion: string;
+  note: string;
 }
 
 export interface DailyPlan {
@@ -61,7 +62,3 @@ export interface Recipe {
   ingredients: string[];
   instructions: string;
 }
-
-// Added for meal rating
-export type MealRating = 'good' | 'neutral' | 'bad' | null;
-export type MealRatings = { [day: string]: { [mealName: string]: MealRating } };
